@@ -9,18 +9,21 @@
         handle_info/2, terminate/2, code_change/3]).
 
 %%%% API -----------------------------------------------------------------------
-start_link([{real, _HostAddr},
+
+%% TODO(varoun) : Need to use IP addresses instead of hostnames!
+
+start_link([{real, HostName},
             {path, _Path},
             {timeout, _Timeout}] = Options) ->
-    gen_server:start_link(?MODULE, Options, []).
+    gen_server:start_link({local, list_to_atom(HostName)}, ?MODULE, Options, []).
 
-check(Pid) ->
-    gen_server:call(Pid, check_health).
+check(Hostname) ->
+    gen_server:call(Hostname, check_health).
 
 %%%% gen_server callbacks ------------------------------------------------------
 
-init([{real, HostAddr}, {path, Path}, {timeout, Timeout}] = _Options) ->
-    {ok, [{url, "http://" ++ HostAddr ++ Path}, {timeout, Timeout}]}.
+init([{real, HostName}, {path, Path}, {timeout, Timeout}] = _Options) ->
+    {ok, [{url, "http://" ++ HostName ++ Path}, {timeout, Timeout}]}.
 
 
 handle_call(check_health, _From, [{url, URL}, {timeout, Timeout}] = Options) ->
@@ -45,11 +48,3 @@ terminate(_Reason, _Options) ->
 
 code_change(_OldVsn, Options, _Extra) ->
     {ok, Options}.
-
-%% 2> inets:start().
-%% ok
-%% 3> {ok, Pid} = check_http:start_link([{real, "www.google.com"}, {path, "/"}, {timeout, 5000}]).
-%% {ok,<0.52.0>}
-%% 4> check_http:check(Pid).
-%% healthy
-%% 5>
