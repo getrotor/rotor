@@ -14,7 +14,7 @@ Build
 	Eshell V7.0.2  (abort with ^G)
 	1> check_http:start_link([{real, "www.freebsd.org"}, {path, "/"}, {timeout, 5000}]).
 	{ok,<0.78.0>}
-	2> check_http:check('www.freebsd.org').
+	2> check_http:check("www.freebsd.org").
 	healthy
 	3>
 

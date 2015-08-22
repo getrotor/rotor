@@ -18,7 +18,7 @@ start_link([{real, HostName},
     gen_server:start_link({local, list_to_atom(HostName)}, ?MODULE, Options, []).
 
 check(Hostname) ->
-    gen_server:call(Hostname, check_health).
+    gen_server:call(list_to_atom(Hostname), check_health).
 
 %%%% gen_server callbacks ------------------------------------------------------
 
