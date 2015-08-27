@@ -5,6 +5,7 @@ An OTP application
 
 Build
 -----
+```
 varoun@ip-10-0-2-24:~/dev/rotor % rebar3 shell
 ===> Verifying dependencies...
 ===> Compiling rotor
@@ -25,3 +26,4 @@ init
                                                    80}},
                                       {inet,[inet],nxdomain}]}}}]]
 4> 
+```
