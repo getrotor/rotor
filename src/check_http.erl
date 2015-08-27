@@ -33,8 +33,7 @@ init([{real, HostName},
 
 
 handle_call(check_health, _From,
-            [{url, _URL}, {timeout, _Timeout},
-             {frequency, _Frequency}, {status, Status}] = State) ->
+            [_URL, _Timeout, _Frequency, {status, Status}] = State) ->
     {reply, Status, State}.
 
 handle_cast(_Request, State) ->
