@@ -25,6 +25,9 @@ check(Rotation) ->
 
 %%%% gen_server callbacks ------------------------------------------------------
 
+%%TODO(varoun): Should we add a bit of randomness to the frequency that
+%% we use to call check_http from here ?
+
 init([{rotation, _Rotation},
       {check_type, http},
       {check_url, CheckUrl},
@@ -34,23 +37,30 @@ init([{rotation, _Rotation},
     _Pollers =
         [check_http:start_link([{real, Real},
                                 {path, CheckUrl},
-                                {timeout, Timeout}])
+                                {timeout, Timeout},
+                                {frequency, Frequency}])
          || Real <- Reals],
-    {ok, [{reals, Reals}, {frequency, Frequency}]}.
+    timer:send_after(Frequency, self(), trigger),
+    {ok, [{reals, Reals}, {frequency, Frequency}, {status, init}]}.
 
-handle_call(check_rotation, _From, [{reals, Reals}, {frequency, _Frequency}]
-            = Options) ->
-    Status = [[{real,Real}, {status, check_http:check(Real)}] || Real <- Reals],
-    {reply, Status, Options}.
+handle_call(check_rotation, _From, [_Reals, _Frequency, {status, Status}]
+            = State) ->
+    {reply, Status, State}.
 
 handle_cast(_Request, Options) ->
     {noreply, Options}.
 
-handle_info(_Msg, Options) ->
-    {noreply, Options}.
+handle_info(trigger,
+            [{reals, Reals}, {frequency, Frequency}, {status, _Status}]
+            = _State) ->
+    Status = [[{real, Real}, {status, check_http:check(Real)}] || Real <- Reals],
+    timer:send_after(Frequency, self(), trigger),
+    {noreply, [{reals, Reals}, {frequency, Frequency}, {status, Status}]};
+handle_info(_Msg, State) ->
+    {noreply, State}.
 
-terminate(_Reason, _Options) ->
+terminate(_Reason, _State) ->
     ok.
 
-code_change(_OldVsn, Options, _Extra) ->
-    {ok, Options}.
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
