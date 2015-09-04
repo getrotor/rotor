@@ -30,23 +30,28 @@ init([{rotation, Rotation}, _Checktype, _CheckURL,
       {frequency, Frequency}, _Timeout, _Reals] = Config) ->
     check_rotation:start_link(Config),
     timer:send_after(Frequency, self(), trigger),
-    {ok, [{rotation, Rotation}, {pool,[]}]}.
+    {ok, [{rotation, Rotation}, {frequency, Frequency}, {pool,[]}]}.
 
 %% NOTE(varoun): we do simple round robin
-handle_call(gethostbyname, _From, [_Rotation, {pool, []}] = State) ->
+handle_call(gethostbyname, _From, [_Rotation, _Freq, {pool, []}] = State) ->
     {reply, ns_tryagain, State};
 handle_call(gethostbyname, _From,
-            [{rotation, Rotation}, {pool, [Head|Tail]}] = _State) ->
-    {reply, {ns_success, Head}, [{rotation, Rotation}, {pool, Tail ++ [Head]}]}.
+            [{rotation, Rotation}, Frequency, {pool, [Head|Tail]}] = _State) ->
+    {reply, {ns_success, Head}, [{rotation, Rotation},
+                                 Frequency,
+                                 {pool, Tail ++ [Head]}]}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-handle_info(trigger, [{rotation, Rotation}, {pool, Pool}]) ->
+handle_info(trigger, [{rotation, Rotation},
+                      {frequency, Frequency},
+                      {pool, Pool}]) ->
     Healthy = [Host || [{real, Host}, {status, healthy}]
                            <- check_rotation:check(Rotation)],
     NewPool = health_merge(Pool, Healthy),
-    {noreply, [{rotation, Rotation}, {pool, NewPool}]}.
+    timer:send_after(Frequency, self(), trigger),
+    {noreply, [{rotation, Rotation}, {frequency, Frequency}, {pool, NewPool}]}.
 
 terminate(_Reason, _State) ->
     ok.
