@@ -29,7 +29,14 @@ handle_cast(_Request, State) ->
 
 handle_info({udp, Socket, Host, Port, Bin},
             [{socket, Socket}, {request_count, Count}]) ->
-    gen_udp:send(Socket, Host, Port, Bin),
+    [HostNameBinary, _] = binary:split(Bin, <<"\n">>),
+    Hostname = binary:bin_to_list(HostNameBinary),
+    case resolver:gethostbyname(Hostname) of
+        ns_tryagain ->
+            gen_udp:send(Socket, Host, Port, "tryagain");
+        {ns_success, IP} ->
+            gen_udp:send(Socket, Host, Port, IP)
+    end,
     {noreply, [{socket, Socket}, {request_count, Count + 1}]}.
 
 terminate(_Reason, [{socket, Socket}, {request_count, _Count}]) ->
