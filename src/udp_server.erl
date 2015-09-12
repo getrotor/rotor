@@ -29,8 +29,7 @@ handle_cast(_Request, State) ->
 
 handle_info({udp, Socket, Host, Port, Bin},
             [{socket, Socket}, {request_count, Count}]) ->
-    [HostNameBinary, _] = binary:split(Bin, <<"\n">>),
-    Hostname = binary:bin_to_list(HostNameBinary),
+    Hostname = binary:bin_to_list(Bin),
     case resolver:gethostbyname(Hostname) of
         ns_tryagain ->
             gen_udp:send(Socket, Host, Port, "tryagain");

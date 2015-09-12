@@ -35,3 +35,11 @@ ok
 11> varoun@ip-10-0-2-24:~/dev/rotor %
 
 ```
+
+Start the UDP server
+--------------------
+```
+11> udp_server:start_link([{port, 6789}]).
+{ok,<0.80.0>}
+12>
+
