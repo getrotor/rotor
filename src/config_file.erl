@@ -1,5 +1,5 @@
 -module(config_file).
--include("records.hrl").
+-include("common.hrl").
 
 
 -export([build_config/0, build_config/1]).
