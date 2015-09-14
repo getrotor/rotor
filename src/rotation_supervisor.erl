@@ -4,7 +4,8 @@
 -include("common.hrl").
 
 %% API
--export([start_link/1]).
+-export([start_in_shell_for_testing/1,
+         start_link/1]).
 
 %% Callbacks
 -export([init/1]).
@@ -14,6 +15,11 @@
 start_link(#config_http{rotation=Rotation} = Config) ->
     supervisor:start_link({local, list_to_atom(Rotation ++ "_supervisor")},
                           ?MODULE, Config).
+
+start_in_shell_for_testing(#config_http{rotation=Rotation} = Config) ->
+    {ok, Pid} = supervisor:start_link({local, list_to_atom(Rotation ++ "_supervisor")},
+                                      ?MODULE, Config),
+    unlink(Pid).
 
 %% Callbacks
 init(#config_http{rotation=Rotation} = Config) ->

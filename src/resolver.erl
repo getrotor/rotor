@@ -25,6 +25,8 @@ gethostbyname(Name) ->
 
 %% gen_server callbacks
 init(#config_http{rotation=Rotation, frequency=Frequency} = Config) ->
+    %% TODO(varoun): Should we trap exits?
+    %% process_flag(trap_exit, true),
     check_rotation:start_link(Config),
     timer:send_after(Frequency, self(), trigger),
     {ok, [{rotation, Rotation}, {frequency, Frequency}, {pool,[]}]}.
