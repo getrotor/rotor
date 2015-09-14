@@ -24,10 +24,9 @@ gethostbyname(Name) ->
     gen_server:call(list_to_atom("nameserver_" ++ Name), gethostbyname).
 
 %% gen_server callbacks
-init(#config_http{rotation=Rotation, frequency=Frequency} = Config) ->
+init(#config_http{rotation=Rotation, frequency=Frequency} = _Config) ->
     %% TODO(varoun): Should we trap exits?
     %% process_flag(trap_exit, true),
-    check_rotation:start_link(Config),
     timer:send_after(Frequency, self(), trigger),
     {ok, [{rotation, Rotation}, {frequency, Frequency}, {pool,[]}]}.
 

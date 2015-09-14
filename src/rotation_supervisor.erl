@@ -24,12 +24,18 @@ start_in_shell_for_testing(#config_http{rotation=Rotation} = Config) ->
 %% Callbacks
 init(#config_http{rotation=Rotation} = Config) ->
     SupFlags = #{strategy => one_for_one, intensity => 1, period => 5},
-    ChildSpecs = [#{id => list_to_atom("nameserver_" ++ Rotation),
+    ChildSpecs = [#{id => "nameserver_" ++ Rotation,
                     start => {resolver, start_link, [Config]},
                     restart => permanent,
                     shutdown => brutal_kill,
                     type => worker,
-                    modules => [resolver]}],
+                    modules => [resolver]},
+                  #{id => Rotation,
+                    start => {check_rotation, start_link, [Config]},
+                    restart => permanent,
+                    shutdown => brutal_kill,
+                    type => worker,
+                    modules => [check_rotation]}],
     {ok, {SupFlags, ChildSpecs}}.
 
     %% {ok, {{one_for_one, 3, 10},
