@@ -1,6 +1,8 @@
 -module(resolver).
 -behaviour(gen_server).
 
+-include("common.hrl").
+
 %% API
 -export([start_link/1, gethostbyname/1]).
 
@@ -9,25 +11,20 @@
         terminate/2, code_change/3]).
 
 %% For debugging only - internal functions.
--export([health_merge/2]).
+%% -export([health_merge/2]).
 
 %%%% API -----------------------------------------------------------------------
 
-start_link([{rotation, Rotation},
-            _Checktype,
-            _CheckURL, % Need a beter name since we do tcp checks as well.
-            _Frequency,
-            _Timeout,
-            _Reals] = Config) ->
-    gen_server:start_link({local, list_to_atom("NameServer" ++ Rotation)},
+start_link(#config_http{rotation=Rotation} = Config) ->
+    gen_server:start_link({local, list_to_atom("nameserver_" ++ Rotation)},
                           ?MODULE, Config, []).
 
+%% TODO(varoun): start using list_to_existing_atom.
 gethostbyname(Name) ->
-    gen_server:call(list_to_atom("NameServer" ++ Name), gethostbyname).
+    gen_server:call(list_to_atom("nameserver_" ++ Name), gethostbyname).
 
 %% gen_server callbacks
-init([{rotation, Rotation}, _Checktype, _CheckURL,
-      {frequency, Frequency}, _Timeout, _Reals] = Config) ->
+init(#config_http{rotation=Rotation, frequency=Frequency} = Config) ->
     check_rotation:start_link(Config),
     timer:send_after(Frequency, self(), trigger),
     {ok, [{rotation, Rotation}, {frequency, Frequency}, {pool,[]}]}.

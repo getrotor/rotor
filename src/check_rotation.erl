@@ -1,6 +1,8 @@
 -module(check_rotation).
 -behaviour(gen_server).
 
+-include("common.hrl").
+
 %% API
 -export([start_link/1, check/1]).
 
@@ -11,14 +13,9 @@
 %%%% API -----------------------------------------------------------------------
 
 %%% For http checks.
-start_link([{rotation, Rotation},
-            {check_type, http},
-            {check_url, _CheckUrl},
-            {frequency, _Frequency},
-            {timeout, _TimeOut},
-            {reals, _Reals}] = Options) ->
+start_link(#config_http{rotation=Rotation, check_type=http} = Config) ->
     gen_server:start_link({local, list_to_atom(Rotation)},
-                          ?MODULE, Options, []).
+                          ?MODULE, Config, []).
 
 check(Rotation) ->
     gen_server:call(list_to_atom(Rotation), check_rotation).
@@ -28,12 +25,8 @@ check(Rotation) ->
 %%TODO(varoun): Should we add a bit of randomness to the frequency that
 %% we use to call check_http from here ?
 
-init([{rotation, _Rotation},
-      {check_type, http},
-      {check_url, CheckUrl},
-      {frequency, Frequency},
-      {timeout, Timeout},
-      {reals, Reals}] = _Options) ->
+init(#config_http{check_type=http, check_url=CheckUrl,
+                  frequency=Frequency, timeout=Timeout, reals=Reals}) ->
     _Pollers =
         [check_http:start_link([{real, Real},
                                 {path, CheckUrl},
