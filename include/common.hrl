@@ -25,6 +25,10 @@
                       frequency :: integer(),
                       timeout :: integer(),
                       reals :: iplist()}).
-
 -type config_http() :: #config_http{}.
--type config_record() :: config_http().
+
+-record(config_server, {listen :: string(),
+                        port :: integer()}).
+-type config_server() :: #config_server{}.
+
+-type config_record() :: config_http() | config_server().
