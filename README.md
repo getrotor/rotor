@@ -18,25 +18,29 @@ Eshell V7.0  (abort with ^G)
 [#config_http{rotation = "www.bsd.org",check_type = http,
               check_url = "/",algorithm = round_robin,frequency = 30000,
               timeout = 2000,
-              reals = ["8.8.178.110","149.20.53.86","129.128.5.94",
+              reals = ["8.8.178.110","149.20.53.86","129.128.5.194",
                        "8.8.8.8"]}]
-3> [resolver:start_link(Config) || Config <- ConfigList].
-[{ok,<0.77.0>}]
+3> [rotation_supervisor:start_link(Config) || Config <- ConfigList].
+[{ok,<0.86.0>}]
 4> resolver:gethostbyname("www.bsd.org").
 ns_tryagain
 5> resolver:gethostbyname("www.bsd.org").
-{ns_success,"8.8.178.110"}
+ns_tryagain
 6> resolver:gethostbyname("www.bsd.org").
-{ns_success,"149.20.53.86"}
+ns_tryagain
 7> resolver:gethostbyname("www.bsd.org").
 {ns_success,"8.8.178.110"}
 8> resolver:gethostbyname("www.bsd.org").
 {ns_success,"149.20.53.86"}
 9> resolver:gethostbyname("www.bsd.org").
+{ns_success,"129.128.5.194"}
+10> resolver:gethostbyname("www.bsd.org").
 {ns_success,"8.8.178.110"}
-10> q().
-ok
-11> [varoun@ip-10-0-2-194 rotor]$ 
+11> resolver:gethostbyname("www.bsd.org").
+{ns_success,"149.20.53.86"}
+12> resolver:gethostbyname("www.bsd.org").
+{ns_success,"129.128.5.194"}
+13> 
 
 ```
 
