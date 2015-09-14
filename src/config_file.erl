@@ -10,9 +10,18 @@
 
 %%%% ---------------------------------------------------------------------------
 
+-spec read_config(ConfigFile) -> Configs when
+      ConfigFile :: string(),
+      Configs :: [term()].
+
 read_config(ConfigFile) ->
     {ok, Configs} = file:consult(ConfigFile),
     Configs.
+
+
+-spec build_config_record(Config) -> ConfigRecord when
+      Config :: term(),
+      ConfigRecord :: config_record().
 
 build_config_record([{rotation, Rotation},
                      {check_type, http},
@@ -28,8 +37,14 @@ build_config_record([{rotation, Rotation},
                  timeout=Timeout,
                  reals=Reals}.
 
+-spec build_config() -> Result when
+      Result :: [config_record()].
 build_config() ->
     build_config(?CONFIG_FILE).
+
+-spec build_config(ConfigFile) -> Result when
+      ConfigFile :: string(),
+      Result :: [config_record()].
 build_config(ConfigFile) ->
     [build_config_record(Config) || Config <- read_config(ConfigFile)].
 

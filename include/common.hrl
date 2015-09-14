@@ -5,6 +5,19 @@
 -type ip() :: string().
 -type iplist() :: [ip()].
 
+%% TODO(varoun): Make the following type specification work, and use it in
+%% parsing config files.
+
+%% -type http_check_config() :: [{rotation, Name :: string()},
+%%                               {check_type, http},
+%%                               {check_url, URL :: string()},
+%%                               {algorithm, ALGO :: algo()},
+%%                               {frequency, Freq :: integer()},
+%%                               {timeout, Timeout :: integer()},
+%%                               {reals, Reals :: iplist()}].
+
+%% -type check_config() :: http_check_config().
+
 -record(config_http, {rotation :: string(),
                       check_type = http :: check(),
                       check_url :: string(),
@@ -12,3 +25,6 @@
                       frequency :: integer(),
                       timeout :: integer(),
                       reals :: iplist()}).
+
+-type config_http() :: #config_http{}.
+-type config_record() :: config_http().
