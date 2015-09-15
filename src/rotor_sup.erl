@@ -7,6 +7,8 @@
 
 -behaviour(supervisor).
 
+-include("common.hrl").
+
 %% API
 -export([start_link/0]).
 
@@ -28,7 +30,27 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_all, 0, 1}, []} }.
+    Config = config_file:build_config(),
+    [{serverconfig, _ServerConfig}, {rotationconfigs, RotationConfigs}] =
+        Config,
+    SupFlags = #{strategy => one_for_one, intensity => 1, period => 5},
+    UDP_server_spec = #{id => udp_server_sup_sup,
+                        start => {udp_server_supervisor, start_link, [Config]},
+                        restart => permanent,
+                        shutdown => brutal_kill,
+                        type => supervisor,
+                        modules => [udp_server_supervisor]},
+
+    RotationSpecs = [#{id => RotConfig#config_http.rotation ++ "_sup_sup",
+                       start => {rotation_supervisor, start_link, [RotConfig]},
+                       restart => permanent,
+                       shutdown => brutal_kill,
+                       type => supervisor,
+                       modules => [rotation_supervisor]} ||
+                        RotConfig <- RotationConfigs],
+    ChildSpecs = [UDP_server_spec] ++ RotationSpecs,
+    {ok, {SupFlags, ChildSpecs}}.
+
 
 %%====================================================================
 %% Internal functions
