@@ -21,11 +21,15 @@ start_link([{serverconfig, _ServerConfig},
 
 %%%% gen_server callbacks ------------------------------------------------------
 
+%% TODO(varoun): We use #config_http{} directly in the init/1 function,
+%% need to handle other config types like config_tcp etc.
+
 init([{serverconfig, #config_server{listen = Listen, port = Port}},
-      {rotationconfigs, _RotationConfigs}]) ->
+      {rotationconfigs, RotationConfigs}]) ->
+    Rotations = [Rotation#config_http.rotation || Rotation <- RotationConfigs],
     {ok, IP} = inet:parse_address(Listen),
     {ok, Socket} = gen_udp:open(Port, [{ip, IP},binary]),
-    {ok, [{socket, Socket}, {request_count, 0}]}.
+    {ok, [{socket, Socket}, {request_count, 0}, {rotations, Rotations}]}.
 
 handle_call(_Request, _From, State) ->
     {noreply, State}.
@@ -34,19 +38,30 @@ handle_cast(_Request, State) ->
     {noreply, State}.
 
 handle_info({udp, Socket, Host, Port, Bin},
-            [{socket, Socket}, {request_count, Count}]) ->
+            [{socket, Socket}, {request_count, Count},
+             {rotations, Rotations}]) ->
     Hostname = binary:bin_to_list(Bin),
-    case resolver:gethostbyname(Hostname) of
-        ns_tryagain ->
-            gen_udp:send(Socket, Host, Port, "tryagain");
-        {ns_success, IP} ->
-            gen_udp:send(Socket, Host, Port, IP)
-    end,
-    {noreply, [{socket, Socket}, {request_count, Count + 1}]}.
 
-terminate(_Reason, [{socket, Socket}, {request_count, _Count}]) ->
+    Result = case lists:member(Hostname, Rotations) of
+                 true -> resolver:gethostbyname(Hostname);
+                 false -> ns_unavail
+             end,
+    send_response(Socket, Host, Port, Result),
+    {noreply, [{socket, Socket}, {request_count, Count + 1},
+               {rotations, Rotations}]}.
+
+
+
+
+terminate(_Reason, [{socket, Socket}, _RequestCount, _Rotation]) ->
     gen_udp:close(Socket),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+%% Internal functions.
+send_response(Socket, Host, Port, {ns_success, IP}) ->
+    gen_udp:send(Socket, Host, Port, IP);
+send_response(Socket, Host, Port, Result) ->
+    gen_udp:send(Socket, Host, Port, Result).
