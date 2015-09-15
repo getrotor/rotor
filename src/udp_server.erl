@@ -63,5 +63,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions.
 send_response(Socket, Host, Port, {ns_success, IP}) ->
     gen_udp:send(Socket, Host, Port, IP);
-send_response(Socket, Host, Port, Result) ->
-    gen_udp:send(Socket, Host, Port, Result).
+send_response(Socket, Host, Port, ns_unavail) ->
+    gen_udp:send(Socket, Host, Port, "ns_unavail");
+send_response(Socket, Host, Port, ns_tryagain) ->
+    gen_udp:send(Socket, Host, Port, "ns_tryagain").
