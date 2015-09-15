@@ -1,6 +1,8 @@
 -module(udp_server).
 -behaviour(gen_server).
 
+-include("common.hrl").
+
 %% API
 -export([start_link/1]).
 
@@ -12,13 +14,17 @@
 
 %%%% API -----------------------------------------------------------------------
 
-start_link([{port, _Port}] = Config) ->
+start_link([{serverconfig, _ServerConfig},
+            {rotationconfigs, _RotationConfigs}] = Config) ->
+    io:format("start_link"),
     gen_server:start_link({local, ?SERVER}, ?MODULE, Config, []).
 
 %%%% gen_server callbacks ------------------------------------------------------
 
-init([{port, Port}]) ->
-    {ok, Socket} = gen_udp:open(Port, [binary]),
+init([{serverconfig, #config_server{listen = Listen, port = Port}},
+      {rotationconfigs, _RotationConfigs}]) ->
+    {ok, IP} = inet:parse_address(Listen),
+    {ok, Socket} = gen_udp:open(Port, [{ip, IP},binary]),
     {ok, [{socket, Socket}, {request_count, 0}]}.
 
 handle_call(_Request, _From, State) ->
