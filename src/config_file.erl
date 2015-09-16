@@ -8,7 +8,7 @@
 
 %% NOTE(varoun): Config file location hard coded - will need a better way to do
 %% this.
--define(CONFIG_FILE, "etc/rotor.conf").
+-define(CONFIG_FILE, "/etc/rotor.conf").
 
 %%%% ---------------------------------------------------------------------------
 
