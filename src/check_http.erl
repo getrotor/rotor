@@ -60,6 +60,9 @@ handle_info({http, {RequestID, Result}},
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body} ->
             {noreply, [URL, Timeout, Frequency,
                        {requestid, none}, {status, healthy}]};
+        {{_Version, ResponseCode, _ReasonPhrase}, _Headers, _Body} ->
+            {noreply, [URL, Timeout, Frequency,
+                       {requestid, none}, {status, {unhealthy, ResponseCode}}]};
         {error, Reason} ->
             {noreply, [URL, Timeout, Frequency,
                        {requestid, none}, {status, {unhealthy, Reason}}]}
