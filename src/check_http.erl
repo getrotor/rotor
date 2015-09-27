@@ -64,6 +64,7 @@ handle_info({http, {RequestID, Result}},
             {noreply, [URL, Timeout, Frequency,
                        {requestid, none}, {status, {unhealthy, ResponseCode}}]};
         {error, Reason} ->
+            lager:notice("Check ~p failed for reason ~p.", [URL, Reason]),
             {noreply, [URL, Timeout, Frequency,
                        {requestid, none}, {status, {unhealthy, Reason}}]}
     end;
