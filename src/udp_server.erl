@@ -47,6 +47,7 @@ handle_info({udp, Socket, Host, Port, Bin},
                  false -> ns_unavail
              end,
     send_response(Socket, Host, Port, Result),
+    exometer:update([rotor, udp_server, request_count], 1),
     {noreply, [{socket, Socket}, {request_count, Count + 1},
                {rotations, Rotations}]}.
 
