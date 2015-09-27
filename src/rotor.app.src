@@ -7,7 +7,8 @@
    [kernel,
     stdlib,
     sasl,
-    inets
+    inets,
+    lager
    ]},
   {env,[]},
   {modules, [rotor_app, rotor_sup, config_file, udp_server_supervisor,
