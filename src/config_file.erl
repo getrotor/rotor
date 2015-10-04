@@ -24,14 +24,14 @@ make_rconf(Rotation, RotationOptions) ->
     {ok, HealthyThreshold} = opt("healthy_threshold", RotationOptions),
     {ok, Reals} = opt("reals", RotationOptions),
     {ok, #rconf{rotation = Rotation,
-                policy = Policy,
-                ping_protocol = PingProtocol,
-                ping_port = PingPort,
+                policy = list_to_atom(Policy),
+                ping_protocol = list_to_atom(PingProtocol),
+                ping_port = list_to_integer(PingPort),
                 ping_path = PingPath,
-                response_timeout = ResponseTimeout,
-                check_interval = CheckInterval,
-                unhealthy_threshold = UnhealthyThreshold,
-                healthy_threshold = HealthyThreshold,
+                response_timeout = list_to_integer(ResponseTimeout),
+                check_interval = list_to_integer(CheckInterval),
+                unhealthy_threshold = list_to_integer(UnhealthyThreshold),
+                healthy_threshold = list_to_integer(HealthyThreshold),
                 reals = Reals}}.
 
 make_gconf(GlobalOptions, RotationOptions) ->
@@ -42,7 +42,7 @@ make_gconf(GlobalOptions, RotationOptions) ->
     {ok, Port} = opt("port", GlobalOptions),
     {ok, LogDir} = opt("logdir", GlobalOptions),
     {ok, #gconf{listen = Listen,
-                port = Port,
+                port = list_to_integer(Port),
                 logdir = LogDir,
                 rotations = [Rotation || {ok, Rotation} <- Rotations]}}.
 
