@@ -13,7 +13,7 @@
 %%%% API -----------------------------------------------------------------------
 
 %%% For http checks.
-start_link(#config_http{rotation=Rotation, check_type=http} = Config) ->
+start_link(#rconf{rotation=Rotation, ping_protocol=http} = Config) ->
     gen_server:start_link({local, list_to_atom(Rotation)},
                           ?MODULE, Config, []).
 
@@ -25,8 +25,9 @@ check(Rotation) ->
 %%TODO(varoun): Should we add a bit of randomness to the frequency that
 %% we use to call check_http from here ?
 
-init(#config_http{check_type=http, check_url=CheckUrl,
-                  frequency=Frequency, timeout=Timeout, reals=Reals}) ->
+init(#rconf{ping_protocol=http, ping_path=CheckUrl,
+            check_interval=Frequency, response_timeout=Timeout,
+            reals=Reals} = Config) ->
     _Pollers =
         [check_http:start_link([{real, Real},
                                 {path, CheckUrl},
@@ -34,9 +35,9 @@ init(#config_http{check_type=http, check_url=CheckUrl,
                                 {frequency, Frequency}])
          || Real <- Reals],
     timer:send_after(Frequency, self(), trigger),
-    {ok, [{reals, Reals}, {frequency, Frequency}, {status, init}]}.
+    {ok, [Config, {status, init}]}.
 
-handle_call(check_rotation, _From, [_Reals, _Frequency, {status, Status}]
+handle_call(check_rotation, _From, [_Config, {status, Status}]
             = State) ->
     {reply, Status, State}.
 
@@ -44,11 +45,12 @@ handle_cast(_Request, Options) ->
     {noreply, Options}.
 
 handle_info(trigger,
-            [{reals, Reals}, {frequency, Frequency}, {status, _Status}]
+            [#rconf{check_interval=Frequency, reals = Reals} = Config,
+             {status, _Status}]
             = _State) ->
     Status = [[{real, Real}, {status, check_http:check(Real)}] || Real <- Reals],
     timer:send_after(Frequency, self(), trigger),
-    {noreply, [{reals, Reals}, {frequency, Frequency}, {status, Status}]};
+    {noreply, [Config, {status, Status}]};
 handle_info(_Msg, State) ->
     {noreply, State}.
 
