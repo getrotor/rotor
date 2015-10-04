@@ -10,13 +10,11 @@
 -export([init/1]).
 
 %% Start the UDP server
-start_link([{serverconfig, _ServerConfig},
-            {rotationconfigs, _Rotations}] = Config) ->
+start_link(#gconf{} = Config) ->
     supervisor:start_link({local, rotd_udp_server_sup}, ?MODULE, Config).
 
 %% Callbacks
-init([{serverconfig, _ServerConfig},
-      {rotationconfigs, _Rotations}] = Config) ->
+init(#gconf{} = Config) ->
     SupFlags = #{strategy => one_for_one, intensity => 1, period => 1},
     ChildSpecs = [#{id => rotd_udp_server_sup,
                     start => {udp_server, start_link, [Config]},
