@@ -30,9 +30,7 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    Config = config_file:build_config(),
-    [{serverconfig, _ServerConfig}, {rotationconfigs, RotationConfigs}] =
-        Config,
+    {ok, Config} = config_file:make_conf(),
     SupFlags = #{strategy => one_for_one, intensity => 1, period => 5},
     UDP_server_spec = #{id => udp_server_sup_sup,
                         start => {udp_server_supervisor, start_link, [Config]},
@@ -41,13 +39,13 @@ init([]) ->
                         type => supervisor,
                         modules => [udp_server_supervisor]},
 
-    RotationSpecs = [#{id => RotConfig#config_http.rotation ++ "_sup_sup",
+    RotationSpecs = [#{id => RotConfig#rconf.rotation ++ "_sup_sup",
                        start => {rotation_supervisor, start_link, [RotConfig]},
                        restart => permanent,
                        shutdown => brutal_kill,
                        type => supervisor,
                        modules => [rotation_supervisor]} ||
-                        RotConfig <- RotationConfigs],
+                        RotConfig <- Config#gconf.rotations],
     ChildSpecs = [UDP_server_spec] ++ RotationSpecs,
     {ok, {SupFlags, ChildSpecs}}.
 
