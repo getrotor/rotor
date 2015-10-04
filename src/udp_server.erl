@@ -14,19 +14,13 @@
 
 %%%% API -----------------------------------------------------------------------
 
-start_link([{serverconfig, _ServerConfig},
-            {rotationconfigs, _RotationConfigs}] = Config) ->
-    io:format("start_link"),
+start_link(#gconf{} = Config) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, Config, []).
 
 %%%% gen_server callbacks ------------------------------------------------------
 
-%% TODO(varoun): We use #config_http{} directly in the init/1 function,
-%% need to handle other config types like config_tcp etc.
-
-init([{serverconfig, #config_server{listen = Listen, port = Port}},
-      {rotationconfigs, RotationConfigs}]) ->
-    Rotations = [Rotation#config_http.rotation || Rotation <- RotationConfigs],
+init(#gconf{listen=Listen, port=Port, rotations=RotationConfigs}) ->
+    Rotations = [Rotation#rconf.rotation || Rotation <- RotationConfigs],
     {ok, IP} = inet:parse_address(Listen),
     {ok, Socket} = gen_udp:open(Port, [{ip, IP},binary]),
     {ok, [{socket, Socket}, {request_count, 0}, {rotations, Rotations}]}.
