@@ -5,7 +5,7 @@ Definitions.
 BeginRotation = rotation
 EndRotation = /rotation
 KeyVal = [A-Za-z0-9\._/]
-WS = [\s\t\n,]
+WS = ([\s\t\n,]|#.*)
 
 Rules.
 {BeginRotation} : {token, {beginrotation, TokenLine, TokenChars}}.
