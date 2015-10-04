@@ -15,7 +15,7 @@
 
 %%%% API -----------------------------------------------------------------------
 
-start_link(#config_http{rotation=Rotation} = Config) ->
+start_link(#rconf{rotation=Rotation} = Config) ->
     gen_server:start_link({local, list_to_atom("nameserver_" ++ Rotation)},
                           ?MODULE, Config, []).
 
@@ -24,32 +24,30 @@ gethostbyname(Name) ->
     gen_server:call(list_to_atom("nameserver_" ++ Name), gethostbyname).
 
 %% gen_server callbacks
-init(#config_http{rotation=Rotation, frequency=Frequency} = _Config) ->
+init(#rconf{check_interval=CheckInterval} = Config) ->
     %% TODO(varoun): Should we trap exits?
     %% process_flag(trap_exit, true),
-    timer:send_after(Frequency, self(), trigger),
-    {ok, [{rotation, Rotation}, {frequency, Frequency}, {pool,[]}]}.
+    timer:send_after(CheckInterval, self(), trigger),
+    {ok, [Config, {pool,[]}]}.
 
 %% NOTE(varoun): we do simple round robin
-handle_call(gethostbyname, _From, [_Rotation, _Freq, {pool, []}] = State) ->
+handle_call(gethostbyname, _From, [Config, {pool, []}] = State) ->
     {reply, ns_tryagain, State};
 handle_call(gethostbyname, _From,
-            [{rotation, Rotation}, Frequency, {pool, [Head|Tail]}] = _State) ->
-    {reply, {ns_success, Head}, [{rotation, Rotation},
-                                 Frequency,
-                                 {pool, Tail ++ [Head]}]}.
+            [Config, {pool, [Head|Tail]}] = _State) ->
+    {reply, {ns_success, Head}, [Config, {pool, Tail ++ [Head]}]}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-handle_info(trigger, [{rotation, Rotation},
-                      {frequency, Frequency},
-                      {pool, Pool}]) ->
+handle_info(trigger,
+            [#rconf{rotation=Rotation, check_interval=CheckInterval} = Config,
+             {pool, Pool}]) ->
     Healthy = [Host || [{real, Host}, {status, healthy}]
                            <- check_rotation:check(Rotation)],
     NewPool = health_merge(Pool, Healthy),
-    timer:send_after(Frequency, self(), trigger),
-    {noreply, [{rotation, Rotation}, {frequency, Frequency}, {pool, NewPool}]}.
+    timer:send_after(CheckInterval, self(), trigger),
+    {noreply, [Config, {pool, NewPool}]}.
 
 terminate(_Reason, _State) ->
     ok.
