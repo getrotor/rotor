@@ -1,34 +1,31 @@
 %% Various types and records used by rotor.
 
--type check() :: http | https | tcp.
--type algo() :: round_robin | weighted_round_robin | load_fb.
--type ip() :: string().
--type iplist() :: [ip()].
+%%%-----------------------------------------------------------------------------
+%%% File    : common.hrl
+%%% Author  : Varoun. P
+%%% Purpose :
+%%% Created : 04 October 2015 by Varoun. P <contact@varoun.com>
+%%%-----------------------------------------------------------------------------
 
-%% TODO(varoun): Make the following type specification work, and use it in
-%% parsing config files.
+-author('contact@varoun.com').
 
-%% -type http_check_config() :: [{rotation, Name :: string()},
-%%                               {check_type, http},
-%%                               {check_url, URL :: string()},
-%%                               {algorithm, ALGO :: algo()},
-%%                               {frequency, Freq :: integer()},
-%%                               {timeout, Timeout :: integer()},
-%%                               {reals, Reals :: iplist()}].
+%% Global Conf
+-record(gconf, {
+          listen = "127.0.0.1",     % IP address that the UDP server listens on.
+          port = 6789,              % Port that the UDP server binds to.
+          logdir = "/var/log/rotor",% Logs are written here.
+          rotations = []            % A list of rotation configs.
+         }).
 
-%% -type check_config() :: http_check_config().
-
--record(config_http, {rotation :: string(),
-                      check_type = http :: check(),
-                      check_url :: string(),
-                      algorithm :: algo(),
-                      frequency :: integer(),
-                      timeout :: integer(),
-                      reals :: iplist()}).
--type config_http() :: #config_http{}.
-
--record(config_server, {listen :: string(),
-                        port :: integer()}).
--type config_server() :: #config_server{}.
-
--type config_record() :: config_http() | config_server().
+-record(rconf, {
+          rotation,                 % Name of the rotation.
+          policy,                   % LB policy, ex. round_robin
+          ping_protocol,            % Protocol to use - http, https, tcp.
+          ping_port,                % The port to use, http = 80.
+          ping_path,                % The health check url for http.
+          response_timeout,
+          check_interval,
+          unhealthy_threshold,
+          healthy_threshold,
+          reals = []
+         }).
