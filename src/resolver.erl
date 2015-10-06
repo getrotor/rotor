@@ -31,7 +31,7 @@ init(#rconf{check_interval=CheckInterval} = Config) ->
     {ok, [Config, {pool,[]}]}.
 
 %% NOTE(varoun): we do simple round robin
-handle_call(gethostbyname, _From, [Config, {pool, []}] = State) ->
+handle_call(gethostbyname, _From, [_Config, {pool, []}] = State) ->
     {reply, ns_tryagain, State};
 handle_call(gethostbyname, _From,
             [Config, {pool, [Head|Tail]}] = _State) ->
