@@ -12,11 +12,14 @@
 
 %%%% API -----------------------------------------------------------------------
 
-start_link(#realconf{ip=IP, ping_protocol=http} = Options) ->
-    gen_server:start_link({local, list_to_atom(IP)}, ?MODULE, Options, []).
+start_link(#realconf{ip=IP, ping_port=Port} = Options) ->
+    gen_server:start_link({local,
+                           list_to_atom(IP ++ ":" ++ integer_to_list(Port))},
+                          ?MODULE,
+                          Options, []).
 
-check(IP) ->
-    gen_server:call(list_to_atom(IP), check_health).
+check(Real) ->
+    gen_server:call(Real, check_health).
 
 %%%% gen_server callbacks ------------------------------------------------------
 
@@ -74,42 +77,3 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
-
-%% varoun@ip-10-0-2-24:~/dev/rotor % rebar3 compile
-%% ===> Verifying dependencies...
-%% ===> Compiling rotor
-%% varoun@ip-10-0-2-24:~/dev/rotor % rebar3 shell
-%% ===> Verifying dependencies...
-%% ===> Compiling rotor
-%% Erlang/OTP 18 [erts-7.0.2] [source] [64-bit] [async-threads:0] [hipe] [kernel-poll:false] [dtrace]
-
-%% Eshell V7.0.2  (abort with ^G)
-%% 1> check_http:start_link([{real, "www.freebsd.org"}, {path, "/"}, {timeout, 2000}, {frequency, 30000}]).
-%% {ok,<0.78.0>}
-%% 2> check_http:check("www.freebsd.org").
-%% init
-%% 3> check_http:check("www.freebsd.org").
-%% init
-%% 4> check_http:check("www.freebsd.org").
-%% healthy
-%% 5> check_http:check("www.freebsd.org").
-%% healthy
-%% 6> q().
-%% ok
-%% 7> varoun@ip-10-0-2-24:~/dev/rotor % rebar3 shell
-%% ===> Verifying dependencies...
-%% ===> Compiling rotor
-%% Erlang/OTP 18 [erts-7.0.2] [source] [64-bit] [async-threads:0] [hipe] [kernel-poll:false] [dtrace]
-
-%% Eshell V7.0.2  (abort with ^G)
-%% 1> check_http:start_link([{real, "www.gfreebsd.org"}, {path, "/"}, {timeout, 2000}, {frequency, 30000}]).
-%% {ok,<0.78.0>}
-%% 2>  check_http:check("www.gfreebsd.org").
-%% init
-%% 3>  check_http:check("www.gfreebsd.org").
-%% {unhealthy,{failed_connect,[{to_address,{"www.gfreebsd.org",
-%%                                          80}},
-%%                             {inet,[inet],nxdomain}]}}
-%% 4> q().
-%% ok
-%% 5> varoun@ip-10-0-2-24:~/dev/rotor %

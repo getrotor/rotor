@@ -48,10 +48,18 @@ handle_cast(_Request, Options) ->
     {noreply, Options}.
 
 handle_info(trigger,
-            [#rconf{check_interval=Interval, reals = Reals} = Config,
+            [#rconf{check_interval=Interval,
+                    reals=IPs,
+                    ping_port=Port} = Config,
              {status, _Status}]
             = _State) ->
-    Status = [[{real, Real}, {status, check_http:check(Real)}] || Real <- Reals],
+
+    Status = [[{real, IP},
+               {status,
+                check_http:check(list_to_atom(IP
+                                              ++ ":"
+                                              ++ integer_to_list(Port)))}]
+              || IP <- IPs],
     timer:send_after(Interval, self(), trigger),
     {noreply, [Config, {status, Status}]};
 handle_info(_Msg, State) ->
