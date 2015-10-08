@@ -24,50 +24,135 @@ check(Real) ->
 %%%% gen_server callbacks ------------------------------------------------------
 
 init(#realconf{ip=IP, ping_protocol=http, ping_port=Port,
-               ping_path=Path, response_timeout=Timeout,
-               check_interval=Interval} = _Options) ->
+               ping_path=Path, check_interval=Interval} = Options) ->
     timer:send_after(Interval, self(), trigger),
-    {ok, [{url, "http://" ++ IP ++ ":" ++ integer_to_list(Port) ++ Path},
-          {timeout, Timeout},
-          {interval, Interval}, {requestid, none}, {status, init}]}.
+    {ok, [{options, Options},
+          {url, "http://" ++ IP ++ ":" ++ integer_to_list(Port) ++ Path},
+          {requestid, none},
+          {healthy_count, 0}, {unhealthy_count, 0},
+          {status, unhealthy}]}.
 
 
 handle_call(check_health, _From,
-            [_URL, _Timeout, _Interval, _RequestID,
+            [_Options, _URL, _RequestID, _HealthyCount, _UnhealthyCount,
              {status, Status}] = State) ->
     {reply, Status, State}.
 
 handle_cast(_Request, State) ->
     {noreply, State}.
 
-handle_info(trigger, [{url, URL},
-                      {timeout, Timeout},
-                      {interval, Interval},
-                      _RequestID,
-                      Status] = _State) ->
+%% NOTE(varoun): Should requestid in the message be none ?
+handle_info(trigger,
+            [{options, Options},
+             {url, URL},
+             _RequestID,
+             HealthyCount, UnhealthyCount,
+             Status] = _State) ->
     {ok, RequestID} =
-        httpc:request(get, {URL, []}, [{timeout, Timeout}],
+        httpc:request(get,
+                      {URL, []},
+                      [{timeout, Options#realconf.response_timeout}],
                       [{sync, false}, {receiver, self()}]),
-    timer:send_after(Interval, self(), trigger),
-    {noreply, [{url, URL}, {timeout, Timeout},
-               {interval, Interval}, {requestid, RequestID},
+    timer:send_after(Options#realconf.check_interval, self(), trigger),
+    {noreply, [{options, Options},
+               {url, URL},
+               {requestid, RequestID},
+               HealthyCount, UnhealthyCount,
                Status]};
 handle_info({http, {RequestID, Result}},
-            [URL, Timeout, Interval,
+            [{options, Options},
+             URL,
              {requestid, RequestID},
-             _Status] = _State) ->
+             {healthy_count, HealthyCount},
+             {unhealthy_count, UnhealthyCount},
+             {status, Status}] = _State) ->
     case Result of
-        {{_Version, 200, _ReasonPhrase}, _Headers, _Body} ->
-            {noreply, [URL, Timeout, Interval,
+        {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
+          when Status =:= healthy
+               andalso HealthyCount =:= Options#realconf.healthy_threshold
+               andalso UnhealthyCount =:= 0 ->
+            {noreply, [{options, Options},
+                       URL,
+                       {healthy_count, HealthyCount},
+                       {unhealthy_count, 0},
                        {requestid, none}, {status, healthy}]};
-        {{_Version, ResponseCode, _ReasonPhrase}, _Headers, _Body} ->
-            {noreply, [URL, Timeout, Interval,
-                       {requestid, none}, {status, {unhealthy, ResponseCode}}]};
-        {error, Reason} ->
-            lager:notice("Check ~p failed for reason ~p.", [URL, Reason]),
-            {noreply, [URL, Timeout, Interval,
-                       {requestid, none}, {status, {unhealthy, Reason}}]}
-    end;
+        {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
+          when Status =:= unhealthy
+               andalso HealthyCount < Options#realconf.healthy_threshold ->
+            {noreply, [{options, Options},
+                       URL,
+                       {healthy_count, HealthyCount + 1},
+                       {unhealthy_count, 0},
+                       {requestid, none},
+                       {status, unhealthy}]};
+        {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
+          when Status =:= unhealthy
+               andalso HealthyCount =:= Options#realconf.healthy_threshold ->
+            {noreply, [{options, Options},
+                       URL,
+                       {healthy_count, HealthyCount},
+                       {unhealthy_count, 0},
+                       {requestid, none},
+                       {status, healthy}]};
+        {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
+          when Status =:= unhealthy
+               andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold
+               andalso HealthyCount =:= 0 ->
+            {noreply, [{options, Options},
+                       URL,
+                       {healthy_count, 0},
+                       {unhealthy_count, UnhealthyCount},
+                       {requestid, none},
+                       {status, unhealthy}]};
+        {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
+          when Status =:= healthy
+               andalso UnhealthyCount < Options#realconf.unhealthy_threshold ->
+            {noreply, [{options, Options},
+                       URL,
+                       {healthy_count, 0},
+                       {unhealthy_count, UnhealthyCount + 1},
+                       {requestid, none},
+                       {status, healthy}]};
+        {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
+          when Status =:= healthy
+               andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
+            {noreply, [{options, Options},
+                       URL,
+                       {healthy_count, 0},
+                       {unhealthy_count, UnhealthyCount},
+                       {requestid, none},
+                       {status, unhealthy}]};
+
+        {error, _Reason}
+          when Status =:= unhealthy
+               andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold
+               andalso HealthyCount =:= 0 ->
+            {noreply, [{options, Options},
+                       URL,
+                       {healthy_count, 0},
+                       {unhealthy_count, UnhealthyCount},
+                       {requestid, none},
+                       {status, unhealthy}]};
+        {error, _Reason}
+          when Status =:= healthy
+               andalso UnhealthyCount < Options#realconf.unhealthy_threshold ->
+            {noreply, [{options, Options},
+                       URL,
+                       {healthy_count, 0},
+                       {unhealthy_count, UnhealthyCount + 1},
+                       {requestid, none},
+                       {status, healthy}]};
+
+        {error, _Reason}
+          when Status =:= healthy
+               andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
+            {noreply, [{options, Options},
+                       URL,
+                       {healthy_count, 0},
+                       {unhealthy_count, UnhealthyCount},
+                       {requestid, none},
+                       {status, unhealthy}]}
+        end;
 
 handle_info(_Msg, State) ->
     {noreply, State}.
