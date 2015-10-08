@@ -23,9 +23,20 @@
           ping_protocol,            % Protocol to use - http, https, tcp.
           ping_port,                % The port to use, http = 80.
           ping_path,                % The health check url for http.
+          response_timeout,         % Unhealthy if response takes longer than this.
+          check_interval,           % Run a check once this many ms.
+          unhealthy_threshold,      % Unhealthy if this many  consecutive checks fail.
+          healthy_threshold,        % Healthy if this many consequtive checks pass.
+          reals = []                % A list of IPs for real servers.
+         }).
+
+-record(realconf, {
+          ip,
+          ping_protocol,
+          ping_port,
+          ping_path,
           response_timeout,
           check_interval,
           unhealthy_threshold,
-          healthy_threshold,
-          reals = []
+          healthy_threshold
          }).

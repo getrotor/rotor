@@ -1,6 +1,8 @@
 -module(check_http).
 -behaviour(gen_server).
 
+-include("common.hrl").
+
 %% API
 -export([start_link/1, check/1]).
 
@@ -10,30 +12,24 @@
 
 %%%% API -----------------------------------------------------------------------
 
-%% TODO(varoun) : Need to use IP addresses instead of hostnames!
+start_link(#realconf{ip=IP, ping_protocol=http} = Options) ->
+    gen_server:start_link({local, list_to_atom(IP)}, ?MODULE, Options, []).
 
-start_link([{real, HostName},
-            {path, _Path},
-            {timeout, _Timeout},
-            {frequency, _Frequency}] = Options) ->
-    gen_server:start_link({local, list_to_atom(HostName)}, ?MODULE, Options, []).
-
-check(Hostname) ->
-    gen_server:call(list_to_atom(Hostname), check_health).
+check(IP) ->
+    gen_server:call(list_to_atom(IP), check_health).
 
 %%%% gen_server callbacks ------------------------------------------------------
 
-init([{real, HostName},
-      {path, Path},
-      {timeout, Timeout},
-      {frequency, Frequency}] = _Options) ->
-    timer:send_after(Frequency, self(), trigger),
-    {ok, [{url, "http://" ++ HostName ++ Path}, {timeout, Timeout},
-          {frequency, Frequency}, {requestid, none}, {status, init}]}.
+init(#realconf{ip=IP, ping_protocol=http,
+               ping_path=Path, response_timeout=Timeout,
+               check_interval=Interval} = _Options) ->
+    timer:send_after(Interval, self(), trigger),
+    {ok, [{url, "http://" ++ IP ++ Path}, {timeout, Timeout},
+          {interval, Interval}, {requestid, none}, {status, init}]}.
 
 
 handle_call(check_health, _From,
-            [_URL, _Timeout, _Frequency, _RequestID,
+            [_URL, _Timeout, _Interval, _RequestID,
              {status, Status}] = State) ->
     {reply, Status, State}.
 
@@ -42,30 +38,30 @@ handle_cast(_Request, State) ->
 
 handle_info(trigger, [{url, URL},
                       {timeout, Timeout},
-                      {frequency, Frequency},
+                      {interval, Interval},
                       _RequestID,
                       Status] = _State) ->
     {ok, RequestID} =
         httpc:request(get, {URL, []}, [{timeout, Timeout}],
                       [{sync, false}, {receiver, self()}]),
-    timer:send_after(Frequency, self(), trigger),
+    timer:send_after(Interval, self(), trigger),
     {noreply, [{url, URL}, {timeout, Timeout},
-               {frequency, Frequency}, {requestid, RequestID},
+               {interval, Interval}, {requestid, RequestID},
                Status]};
 handle_info({http, {RequestID, Result}},
-            [URL, Timeout, Frequency,
+            [URL, Timeout, Interval,
              {requestid, RequestID},
              _Status] = _State) ->
     case Result of
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body} ->
-            {noreply, [URL, Timeout, Frequency,
+            {noreply, [URL, Timeout, Interval,
                        {requestid, none}, {status, healthy}]};
         {{_Version, ResponseCode, _ReasonPhrase}, _Headers, _Body} ->
-            {noreply, [URL, Timeout, Frequency,
+            {noreply, [URL, Timeout, Interval,
                        {requestid, none}, {status, {unhealthy, ResponseCode}}]};
         {error, Reason} ->
             lager:notice("Check ~p failed for reason ~p.", [URL, Reason]),
-            {noreply, [URL, Timeout, Frequency,
+            {noreply, [URL, Timeout, Interval,
                        {requestid, none}, {status, {unhealthy, Reason}}]}
     end;
 

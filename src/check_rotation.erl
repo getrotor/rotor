@@ -25,16 +25,19 @@ check(Rotation) ->
 %%TODO(varoun): Should we add a bit of randomness to the frequency that
 %% we use to call check_http from here ?
 
-init(#rconf{ping_protocol=http, ping_path=CheckUrl,
-            check_interval=Frequency, response_timeout=Timeout,
-            reals=Reals} = Config) ->
+init(#rconf{} = Config) ->
     _Pollers =
-        [check_http:start_link([{real, Real},
-                                {path, CheckUrl},
-                                {timeout, Timeout},
-                                {frequency, Frequency}])
-         || Real <- Reals],
-    timer:send_after(Frequency, self(), trigger),
+        [check_http:start_link(
+           #realconf{ip=IP,
+                     ping_protocol=Config#rconf.ping_protocol,
+                     ping_port=Config#rconf.ping_port,
+                     ping_path=Config#rconf.ping_path,
+                     response_timeout=Config#rconf.response_timeout,
+                     check_interval=Config#rconf.check_interval,
+                     unhealthy_threshold=Config#rconf.unhealthy_threshold,
+                     healthy_threshold=Config#rconf.healthy_threshold})
+         || IP <- Config#rconf.reals],
+    timer:send_after(Config#rconf.check_interval, self(), trigger),
     {ok, [Config, {status, init}]}.
 
 handle_call(check_rotation, _From, [_Config, {status, Status}]
@@ -45,11 +48,11 @@ handle_cast(_Request, Options) ->
     {noreply, Options}.
 
 handle_info(trigger,
-            [#rconf{check_interval=Frequency, reals = Reals} = Config,
+            [#rconf{check_interval=Interval, reals = Reals} = Config,
              {status, _Status}]
             = _State) ->
     Status = [[{real, Real}, {status, check_http:check(Real)}] || Real <- Reals],
-    timer:send_after(Frequency, self(), trigger),
+    timer:send_after(Interval, self(), trigger),
     {noreply, [Config, {status, Status}]};
 handle_info(_Msg, State) ->
     {noreply, State}.
