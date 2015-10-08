@@ -20,11 +20,12 @@ check(IP) ->
 
 %%%% gen_server callbacks ------------------------------------------------------
 
-init(#realconf{ip=IP, ping_protocol=http,
+init(#realconf{ip=IP, ping_protocol=http, ping_port=Port,
                ping_path=Path, response_timeout=Timeout,
                check_interval=Interval} = _Options) ->
     timer:send_after(Interval, self(), trigger),
-    {ok, [{url, "http://" ++ IP ++ Path}, {timeout, Timeout},
+    {ok, [{url, "http://" ++ IP ++ ":" ++ integer_to_list(Port) ++ Path},
+          {timeout, Timeout},
           {interval, Interval}, {requestid, none}, {status, init}]}.
 
 
