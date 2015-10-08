@@ -73,26 +73,27 @@ handle_info({http, {RequestID, Result}},
                andalso UnhealthyCount =:= 0 ->
             {noreply, [{options, Options},
                        URL,
+                       {requestid, none},
                        {healthy_count, HealthyCount},
                        {unhealthy_count, 0},
-                       {requestid, none}, {status, healthy}]};
+                       {status, healthy}]};
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
           when Status =:= unhealthy
                andalso HealthyCount < Options#realconf.healthy_threshold ->
             {noreply, [{options, Options},
                        URL,
+                       {requestid, none},
                        {healthy_count, HealthyCount + 1},
                        {unhealthy_count, 0},
-                       {requestid, none},
                        {status, unhealthy}]};
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
           when Status =:= unhealthy
                andalso HealthyCount =:= Options#realconf.healthy_threshold ->
             {noreply, [{options, Options},
                        URL,
+                       {requestid, none},
                        {healthy_count, HealthyCount},
                        {unhealthy_count, 0},
-                       {requestid, none},
                        {status, healthy}]};
         {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
           when Status =:= unhealthy
@@ -100,60 +101,59 @@ handle_info({http, {RequestID, Result}},
                andalso HealthyCount =:= 0 ->
             {noreply, [{options, Options},
                        URL,
+                       {requestid, none},
                        {healthy_count, 0},
                        {unhealthy_count, UnhealthyCount},
-                       {requestid, none},
                        {status, unhealthy}]};
         {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
           when Status =:= healthy
                andalso UnhealthyCount < Options#realconf.unhealthy_threshold ->
             {noreply, [{options, Options},
                        URL,
+                       {requestid, none},
                        {healthy_count, 0},
                        {unhealthy_count, UnhealthyCount + 1},
-                       {requestid, none},
                        {status, healthy}]};
         {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
           when Status =:= healthy
                andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
             {noreply, [{options, Options},
                        URL,
+                       {requestid, none},
                        {healthy_count, 0},
                        {unhealthy_count, UnhealthyCount},
-                       {requestid, none},
                        {status, unhealthy}]};
-
         {error, _Reason}
           when Status =:= unhealthy
                andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold
                andalso HealthyCount =:= 0 ->
             {noreply, [{options, Options},
                        URL,
+                       {requestid, none},
                        {healthy_count, 0},
                        {unhealthy_count, UnhealthyCount},
-                       {requestid, none},
                        {status, unhealthy}]};
         {error, _Reason}
           when Status =:= healthy
                andalso UnhealthyCount < Options#realconf.unhealthy_threshold ->
             {noreply, [{options, Options},
                        URL,
+                       {requestid, none},
                        {healthy_count, 0},
                        {unhealthy_count, UnhealthyCount + 1},
-                       {requestid, none},
                        {status, healthy}]};
-
         {error, _Reason}
           when Status =:= healthy
                andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
             {noreply, [{options, Options},
                        URL,
+                       {requestid, none},
                        {healthy_count, 0},
                        {unhealthy_count, UnhealthyCount},
-                       {requestid, none},
                        {status, unhealthy}]}
         end;
 
+%% NOTE(varoun): Delete the next function?
 handle_info(_Msg, State) ->
     {noreply, State}.
 
