@@ -68,13 +68,11 @@ handle_info({http, {RequestID, Result}},
              {status, Status}] = _State) ->
     case Result of
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
-          when Status =:= healthy
-               andalso HealthyCount =:= Options#realconf.healthy_threshold
-               andalso UnhealthyCount =:= 0 ->
+          when Status =:= healthy ->
             {noreply, [{options, Options},
                        URL,
                        {requestid, none},
-                       {healthy_count, HealthyCount},
+                       {healthy_count, 0},
                        {unhealthy_count, 0},
                        {status, healthy}]};
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
@@ -96,14 +94,12 @@ handle_info({http, {RequestID, Result}},
                        {unhealthy_count, 0},
                        {status, healthy}]};
         {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
-          when Status =:= unhealthy
-               andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold
-               andalso HealthyCount =:= 0 ->
+          when Status =:= unhealthy ->
             {noreply, [{options, Options},
                        URL,
                        {requestid, none},
                        {healthy_count, 0},
-                       {unhealthy_count, UnhealthyCount},
+                       {unhealthy_count, 0},
                        {status, unhealthy}]};
         {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
           when Status =:= healthy
@@ -124,14 +120,12 @@ handle_info({http, {RequestID, Result}},
                        {unhealthy_count, UnhealthyCount},
                        {status, unhealthy}]};
         {error, _Reason}
-          when Status =:= unhealthy
-               andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold
-               andalso HealthyCount =:= 0 ->
+          when Status =:= unhealthy ->
             {noreply, [{options, Options},
                        URL,
                        {requestid, none},
                        {healthy_count, 0},
-                       {unhealthy_count, UnhealthyCount},
+                       {unhealthy_count, 0},
                        {status, unhealthy}]};
         {error, _Reason}
           when Status =:= healthy
