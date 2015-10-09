@@ -78,6 +78,7 @@ handle_info({http, {RequestID, Result}},
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
           when Status =:= unhealthy
                andalso HealthyCount < Options#realconf.healthy_threshold ->
+            lager:notice("Service ~p transitioning to status HEALTHY", [URL]),
             {noreply, [{options, Options},
                        URL,
                        {requestid, none},
@@ -87,6 +88,7 @@ handle_info({http, {RequestID, Result}},
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
           when Status =:= unhealthy
                andalso HealthyCount =:= Options#realconf.healthy_threshold ->
+            lager:notice("Service ~p has transitioned to status HEALTHY", [URL]),
             {noreply, [{options, Options},
                        URL,
                        {requestid, none},
@@ -104,6 +106,7 @@ handle_info({http, {RequestID, Result}},
         {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
           when Status =:= healthy
                andalso UnhealthyCount < Options#realconf.unhealthy_threshold ->
+            lager:notice("Service ~p transitioning to status UNHEALTHY", [URL]),
             {noreply, [{options, Options},
                        URL,
                        {requestid, none},
@@ -113,6 +116,7 @@ handle_info({http, {RequestID, Result}},
         {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
           when Status =:= healthy
                andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
+            lager:notice("Service ~p has transitioned to status UNHEALTHY", [URL]),
             {noreply, [{options, Options},
                        URL,
                        {requestid, none},
