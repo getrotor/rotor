@@ -31,6 +31,7 @@
          }).
 
 -record(realconf, {
+          name,
           ip,
           ping_protocol,
           ping_port,
