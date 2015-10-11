@@ -41,3 +41,10 @@
           unhealthy_threshold,
           healthy_threshold
          }).
+
+-record(checkstate, {
+          options,                  % The realconf record goes here.
+          healthy_count = 0,
+          unhealthy_count = 0,
+          status = unhealthy
+          }).
