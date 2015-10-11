@@ -9,6 +9,9 @@
 
 -author('contact@varoun.com').
 
+%% Common definitions.
+-define(WAITTIME, 200). %% Wait time in ms.
+
 %% Global Conf
 -record(gconf, {
           listen = "127.0.0.1",     % IP address that the UDP server listens on.
@@ -17,6 +20,7 @@
           rotations = []            % A list of rotation configs.
          }).
 
+%% Rotation Conf
 -record(rconf, {
           rotation,                 % Name of the rotation.
           policy,                   % LB policy, ex. round_robin
@@ -30,6 +34,7 @@
           reals = []                % A list of IPs for real servers.
          }).
 
+%% Real Conf
 -record(realconf, {
           name,
           ip,
@@ -42,6 +47,7 @@
           healthy_threshold
          }).
 
+%% Check State
 -record(checkstate, {
           options,                  % The realconf record goes here.
           healthy_count = 0,

@@ -24,10 +24,10 @@ gethostbyname(Name) ->
     gen_server:call(list_to_atom("nameserver_" ++ Name), gethostbyname).
 
 %% gen_server callbacks
-init(#rconf{check_interval=CheckInterval} = Config) ->
+init(#rconf{} = Config) ->
     %% TODO(varoun): Should we trap exits?
     %% process_flag(trap_exit, true),
-    timer:send_after(CheckInterval, self(), trigger),
+    timer:send_after(?WAITTIME, self(), trigger),
     {ok, [Config, {pool,[]}]}.
 
 %% NOTE(varoun): we do simple round robin

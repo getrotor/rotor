@@ -37,7 +37,7 @@ init(#rconf{} = Config) ->
                      unhealthy_threshold=Config#rconf.unhealthy_threshold,
                      healthy_threshold=Config#rconf.healthy_threshold})
          || IP <- Config#rconf.reals],
-    timer:send_after(Config#rconf.check_interval, self(), trigger),
+    timer:send_after(?WAITTIME, self(), trigger),
     {ok, [Config, {status, init}]}.
 
 handle_call(check_rotation, _From, [_Config, {status, Status}]
