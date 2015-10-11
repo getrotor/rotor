@@ -26,17 +26,6 @@ check(Rotation) ->
 %% we use to call check_http from here ?
 
 init(#rconf{} = Config) ->
-    _Pollers =
-        [check_http:start_link(
-           #realconf{ip=IP,
-                     ping_protocol=Config#rconf.ping_protocol,
-                     ping_port=Config#rconf.ping_port,
-                     ping_path=Config#rconf.ping_path,
-                     response_timeout=Config#rconf.response_timeout,
-                     check_interval=Config#rconf.check_interval,
-                     unhealthy_threshold=Config#rconf.unhealthy_threshold,
-                     healthy_threshold=Config#rconf.healthy_threshold})
-         || IP <- Config#rconf.reals],
     timer:send_after(?WAITTIME, self(), trigger),
     {ok, [Config, {status, init}]}.
 
