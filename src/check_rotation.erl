@@ -26,18 +26,14 @@ check(Rotation) ->
 %% we use to call check_http from here ?
 
 init(#rconf{} = Config) ->
-    timer:send_after(?WAITTIME, self(), trigger),
     {ok, [Config, {status, init}]}.
 
 handle_call(check_rotation, _From, [_Config, {status, Status}]
             = State) ->
     {reply, Status, State}.
 
-handle_cast(_Request, Options) ->
-    {noreply, Options}.
-
-handle_info(trigger,
-            [#rconf{check_interval=Interval,
+handle_cast(trigger,
+            [#rconf{rotation=Rotation,
                     reals=IPs,
                     ping_port=Port} = Config,
              {status, _Status}]
@@ -49,8 +45,9 @@ handle_info(trigger,
                                               ++ ":"
                                               ++ integer_to_list(Port)))}]
               || IP <- IPs],
-    timer:send_after(Interval, self(), trigger),
-    {noreply, [Config, {status, Status}]};
+    gen_server:cast(list_to_atom("nameserver_" ++ Rotation), trigger),
+    {noreply, [Config, {status, Status}]}.
+
 handle_info(_Msg, State) ->
     {noreply, State}.
 

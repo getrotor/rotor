@@ -78,6 +78,7 @@ handle_info({http, {RequestID, Result}},
           when Status =:= unhealthy
                andalso HealthyCount =:= Options#realconf.healthy_threshold ->
             lager:notice("Service ~p has transitioned to status HEALTHY", [URL]),
+            gen_server:cast(list_to_atom(Options#realconf.name), trigger),
             {noreply, [CheckState#checkstate{unhealthy_count = 0, status = healthy},
                        URL,
                        {requestid, none}]};
@@ -99,6 +100,7 @@ handle_info({http, {RequestID, Result}},
           when Status =:= healthy
                andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
             lager:notice("Service ~p has transitioned to status UNHEALTHY", [URL]),
+            gen_server:cast(list_to_atom(Options#realconf.name), trigger),
             {noreply, [CheckState#checkstate{healthy_count = 0,
                                              status = unhealthy},
                        URL,
@@ -122,6 +124,7 @@ handle_info({http, {RequestID, Result}},
           when Status =:= healthy
                andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
             lager:notice("Service ~p has transitioned to status UNHEALTHY", [URL]),
+            gen_server:cast(list_to_atom(Options#realconf.name), trigger),
             {noreply, [CheckState#checkstate{healthy_count = 0,
                                              status = unhealthy},
                        URL,

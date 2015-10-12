@@ -27,7 +27,6 @@ gethostbyname(Name) ->
 init(#rconf{} = Config) ->
     %% TODO(varoun): Should we trap exits?
     %% process_flag(trap_exit, true),
-    timer:send_after(?WAITTIME, self(), trigger),
     {ok, [Config, {pool,[]}]}.
 
 %% NOTE(varoun): we do simple round robin
@@ -37,16 +36,15 @@ handle_call(gethostbyname, _From,
             [Config, {pool, [Head|Tail]}] = _State) ->
     {reply, {ns_success, Head}, [Config, {pool, Tail ++ [Head]}]}.
 
-handle_cast(_Msg, State) ->
+handle_info(_Msg, State) ->
     {noreply, State}.
 
-handle_info(trigger,
-            [#rconf{rotation=Rotation, check_interval=CheckInterval} = Config,
+handle_cast(trigger,
+            [#rconf{rotation=Rotation} = Config,
              {pool, Pool}]) ->
     Healthy = [Host || [{real, Host}, {status, healthy}]
                            <- check_rotation:check(Rotation)],
     NewPool = health_merge(Pool, Healthy),
-    timer:send_after(CheckInterval, self(), trigger),
     {noreply, [Config, {pool, NewPool}]}.
 
 terminate(_Reason, _State) ->
