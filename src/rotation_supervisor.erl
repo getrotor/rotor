@@ -23,7 +23,8 @@ start_in_shell_for_testing(#rconf{rotation=Rotation} = Config) ->
 
 %% Callbacks
 init(#rconf{rotation=Rotation} = Config) ->
-    RealConfs = [#realconf{ip=IP,
+    RealConfs = [#realconf{name=Rotation,
+                           ip=IP,
                            ping_protocol=Config#rconf.ping_protocol,
                            ping_port=Config#rconf.ping_port,
                            ping_path=Config#rconf.ping_path,
