@@ -17,7 +17,12 @@ make_rconf(Rotation, RotationOptions) ->
     {ok, Policy} = opt("policy", RotationOptions),
     {ok, PingProtocol} = opt("ping_protocol", RotationOptions),
     {ok, PingPort} = opt("ping_port", RotationOptions),
-    {ok, PingPath} = opt("ping_path", RotationOptions),
+    if
+        PingProtocol =:= "tcp" ->
+            PingPath = "none";
+        true ->
+            {ok, PingPath} = opt("ping_path", RotationOptions)
+    end,
     {ok, ResponseTimeout} = opt("response_timeout", RotationOptions),
     {ok, CheckInterval} = opt("check_interval", RotationOptions),
     {ok, UnhealthyThreshold} = opt("unhealthy_threshold", RotationOptions),

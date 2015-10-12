@@ -12,8 +12,8 @@
 
 %%%% API -----------------------------------------------------------------------
 
-%%% For http checks.
-start_link(#rconf{rotation=Rotation, ping_protocol=http} = Config) ->
+%%% For all checks.
+start_link(#rconf{rotation=Rotation} = Config) ->
     gen_server:start_link({local, list_to_atom(Rotation)},
                           ?MODULE, Config, []).
 

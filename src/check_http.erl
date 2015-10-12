@@ -35,6 +35,9 @@ init(#realconf{ping_protocol=tcp} = Options) ->
 
 handle_call(check_health, _From,
             [#checkstate{status = Status}, _URL, _ReqID] = State) ->
+    {reply, Status, State};
+handle_call(check_health, _From,
+            [#checkstate{status = Status}, tcp_check] = State) ->
     {reply, Status, State}.
 
 handle_cast(_Request, State) ->
@@ -143,6 +146,7 @@ handle_info(trigger, [#checkstate{options=Options,
     case gen_tcp:connect(IP, PORT, [], Options#realconf.response_timeout) of
         {ok, Socket} when Status =:= healthy ->
             gen_tcp:close(Socket),
+            timer:send_after(Options#realconf.check_interval, self(), trigger),
             {noreply, [CheckState#checkstate{healthy_count=0,
                                              unhealthy_count=0},
                        tcp_check]};
@@ -150,7 +154,8 @@ handle_info(trigger, [#checkstate{options=Options,
                           HealthyCount < Options#realconf.healthy_threshold ->
             gen_tcp:close(Socket),
             lager:notice("Service ~p transitioning to status HEALTHY",
-                         [IP ++ ":" ++ PORT]),
+                         [IP ++ ":" ++ integer_to_list(PORT)]),
+            timer:send_after(Options#realconf.check_interval, self(), trigger),
             {noreply, [CheckState#checkstate{healthy_count = HealthyCount + 1,
                                              unhealthy_count = 0},
                        tcp_check]};
@@ -158,8 +163,9 @@ handle_info(trigger, [#checkstate{options=Options,
                           HealthyCount =:= Options#realconf.healthy_threshold ->
             gen_tcp:close(Socket),
             lager:notice("Service ~p has transitioned to status HEALTHY",
-                         [IP ++ ":" ++ PORT]),
+                         [IP ++ ":" ++ integer_to_list(PORT)]),
             gen_server:cast(list_to_atom(Options#realconf.name), trigger),
+            timer:send_after(Options#realconf.check_interval, self(), trigger),
             {noreply, [CheckState#checkstate{unhealthy_count = 0, status = healthy},
                        tcp_check]};
         {error, _Reason} when Status =:= unhealthy ->
@@ -169,15 +175,17 @@ handle_info(trigger, [#checkstate{options=Options,
         {error, _Reason} when Status =:= healthy andalso
                               UnhealthyCount < Options#realconf.unhealthy_threshold ->
             lager:notice("Service ~p transitioning to status UNHEALTHY",
-                         [IP ++ ":" ++ PORT]),
+                         [IP ++ ":" ++ integer_to_list(PORT)]),
+            timer:send_after(Options#realconf.check_interval, self(), trigger),
             {noreply, [CheckState#checkstate{healthy_count = 0,
                                              unhealthy_count = UnhealthyCount + 1},
                        tcp_check]};
         {error, _Reason} when Status =:= healthy andalso
                               UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
             lager:notice("Service ~p has transitioned to status UNHEALTHY",
-                         [IP ++ ":" ++ PORT]),
+                         [IP ++ ":" ++ integer_to_list(PORT)]),
             gen_server:cast(list_to_atom(Options#realconf.name), trigger),
+            timer:send_after(Options#realconf.check_interval, self(), trigger),
             {noreply, [CheckState#checkstate{healthy_count = 0,
                                              status = unhealthy},
                        tcp_check]}
