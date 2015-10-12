@@ -29,7 +29,7 @@ init(#realconf{ip=IP, ping_protocol=http, ping_port=Port,
     {ok, [#checkstate{options = Options},
           {url, "http://" ++ IP ++ ":" ++ integer_to_list(Port) ++ Path},
           {requestid, none}]};
-init(#realconf{} = Options) ->
+init(#realconf{ping_protocol=tcp} = Options) ->
     timer:send_after(?WAITTIME, self(), trigger),
     {ok, [#checkstate{options = Options}, tcp_check]}.
 
