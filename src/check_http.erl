@@ -56,7 +56,7 @@ handle_info(trigger,
              _ReqID] = _State) ->
     {ok, RequestID} =
         httpc:request(get,
-                      {URL, []},
+                      {URL, [{"Host", Options#realconf.name}]},
                       [{timeout, Options#realconf.response_timeout}],
                       [{sync, false}, {receiver, self()}]),
     timer:send_after(Options#realconf.check_interval, self(), trigger),
