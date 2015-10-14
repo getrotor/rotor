@@ -8,6 +8,10 @@
     stdlib,
     sasl,
     inets,
+    crypto,
+    asn1,
+    public_key,
+    ssl,
     lager,
     exometer_core
    ]},
