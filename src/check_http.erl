@@ -79,7 +79,8 @@ handle_info({http, {RequestID, Result}},
                        {requestid, none}]};
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
           when Status =:= unhealthy
-               andalso HealthyCount < Options#realconf.healthy_threshold ->
+               andalso
+               HealthyCount < Options#realconf.healthy_threshold - 1 ->
             lager:notice("Service ~p transitioning to status HEALTHY", [URL]),
             {noreply, [CheckState#checkstate{healthy_count = HealthyCount + 1,
                                              unhealthy_count = 0},
@@ -87,7 +88,8 @@ handle_info({http, {RequestID, Result}},
                        {requestid, none}]};
         {{_Version, 200, _ReasonPhrase}, _Headers, _Body}
           when Status =:= unhealthy
-               andalso HealthyCount =:= Options#realconf.healthy_threshold ->
+               andalso
+               HealthyCount =:= Options#realconf.healthy_threshold - 1 ->
             lager:notice("Service ~p has transitioned to status HEALTHY", [URL]),
             gen_server:cast(list_to_atom(Options#realconf.name), trigger),
             {noreply, [CheckState#checkstate{unhealthy_count = 0, status = healthy},
@@ -101,7 +103,8 @@ handle_info({http, {RequestID, Result}},
                        {requestid, none}]};
         {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
           when Status =:= healthy
-               andalso UnhealthyCount < Options#realconf.unhealthy_threshold ->
+               andalso
+               UnhealthyCount < Options#realconf.unhealthy_threshold - 1 ->
             lager:notice("Service ~p transitioning to status UNHEALTHY", [URL]),
             {noreply, [CheckState#checkstate{healthy_count = 0,
                                              unhealthy_count = UnhealthyCount + 1},
@@ -109,7 +112,8 @@ handle_info({http, {RequestID, Result}},
                        {requestid, none}]};
         {{_Version, _ResponseCode, _ReasonPhrase}, _Headers, _Body}
           when Status =:= healthy
-               andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
+               andalso
+               UnhealthyCount =:= Options#realconf.unhealthy_threshold - 1 ->
             lager:notice("Service ~p has transitioned to status UNHEALTHY", [URL]),
             gen_server:cast(list_to_atom(Options#realconf.name), trigger),
             {noreply, [CheckState#checkstate{healthy_count = 0,
@@ -125,7 +129,8 @@ handle_info({http, {RequestID, Result}},
                        {requestid, none}]};
         {error, _Reason}
           when Status =:= healthy
-               andalso UnhealthyCount < Options#realconf.unhealthy_threshold ->
+               andalso
+               UnhealthyCount < Options#realconf.unhealthy_threshold - 1 ->
             lager:notice("Service ~p transitioning to status UNHEALTHY", [URL]),
             {noreply, [CheckState#checkstate{healthy_count = 0,
                                              unhealthy_count = UnhealthyCount + 1},
@@ -133,7 +138,8 @@ handle_info({http, {RequestID, Result}},
                        {requestid, none}]};
         {error, _Reason}
           when Status =:= healthy
-               andalso UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
+               andalso
+               UnhealthyCount =:= Options#realconf.unhealthy_threshold - 1 ->
             lager:notice("Service ~p has transitioned to status UNHEALTHY", [URL]),
             gen_server:cast(list_to_atom(Options#realconf.name), trigger),
             {noreply, [CheckState#checkstate{healthy_count = 0,
@@ -156,8 +162,9 @@ handle_info(trigger, [#checkstate{options=Options,
             {noreply, [CheckState#checkstate{healthy_count=0,
                                              unhealthy_count=0},
                        tcp_check]};
-        {ok, Socket} when Status =:= unhealthy andalso
-                          HealthyCount < Options#realconf.healthy_threshold ->
+        {ok, Socket} when Status =:= unhealthy
+                          andalso
+                          HealthyCount < Options#realconf.healthy_threshold - 1 ->
             gen_tcp:close(Socket),
             lager:notice("Service ~p transitioning to status HEALTHY",
                          [IP ++ ":" ++ integer_to_list(PORT)]),
@@ -165,8 +172,9 @@ handle_info(trigger, [#checkstate{options=Options,
             {noreply, [CheckState#checkstate{healthy_count = HealthyCount + 1,
                                              unhealthy_count = 0},
                        tcp_check]};
-        {ok, Socket} when Status =:= unhealthy andalso
-                          HealthyCount =:= Options#realconf.healthy_threshold ->
+        {ok, Socket} when Status =:= unhealthy
+                          andalso
+                          HealthyCount =:= Options#realconf.healthy_threshold - 1 ->
             gen_tcp:close(Socket),
             lager:notice("Service ~p has transitioned to status HEALTHY",
                          [IP ++ ":" ++ integer_to_list(PORT)]),
@@ -178,16 +186,18 @@ handle_info(trigger, [#checkstate{options=Options,
             {noreply, [CheckState#checkstate{healthy_count = 0,
                                              unhealthy_count = 0},
                        tcp_check]};
-        {error, _Reason} when Status =:= healthy andalso
-                              UnhealthyCount < Options#realconf.unhealthy_threshold ->
+        {error, _Reason} when Status =:= healthy
+                              andalso
+                              UnhealthyCount < Options#realconf.unhealthy_threshold - 1 ->
             lager:notice("Service ~p transitioning to status UNHEALTHY",
                          [IP ++ ":" ++ integer_to_list(PORT)]),
             timer:send_after(Options#realconf.check_interval, self(), trigger),
             {noreply, [CheckState#checkstate{healthy_count = 0,
                                              unhealthy_count = UnhealthyCount + 1},
                        tcp_check]};
-        {error, _Reason} when Status =:= healthy andalso
-                              UnhealthyCount =:= Options#realconf.unhealthy_threshold ->
+        {error, _Reason} when Status =:= healthy
+                              andalso
+                              UnhealthyCount =:= Options#realconf.unhealthy_threshold - 1 ->
             lager:notice("Service ~p has transitioned to status UNHEALTHY",
                          [IP ++ ":" ++ integer_to_list(PORT)]),
             gen_server:cast(list_to_atom(Options#realconf.name), trigger),
