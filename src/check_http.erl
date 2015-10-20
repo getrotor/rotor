@@ -183,6 +183,7 @@ handle_info(trigger, [#checkstate{options=Options,
             {noreply, [CheckState#checkstate{unhealthy_count = 0, status = healthy},
                        tcp_check]};
         {error, _Reason} when Status =:= unhealthy ->
+            timer:send_after(Options#realconf.check_interval, self(), trigger),
             {noreply, [CheckState#checkstate{healthy_count = 0,
                                              unhealthy_count = 0},
                        tcp_check]};
