@@ -41,7 +41,7 @@ handle_cast(trigger,
 
     Status = [[{real, IP},
                {status,
-                check_http:check(list_to_atom(IP
+                check_real:check(list_to_atom(IP
                                               ++ ":"
                                               ++ integer_to_list(Port)))}]
               || IP <- IPs],

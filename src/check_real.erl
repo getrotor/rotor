@@ -1,4 +1,4 @@
--module(check_http).
+-module(check_real).
 -behaviour(gen_server).
 
 -include("common.hrl").

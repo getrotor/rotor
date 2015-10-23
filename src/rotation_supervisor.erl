@@ -49,9 +49,9 @@ init(#rconf{rotation=Rotation} = Config) ->
     RealSpecs = [#{id => RealConfig#realconf.ip ++
                        integer_to_list(RealConfig#realconf.ping_port) ++
                        "_sup",
-                   start => {check_http, start_link, [RealConfig]},
+                   start => {check_real, start_link, [RealConfig]},
                    restart => permanent,
                    shutdown => brutal_kill,
                    type => worker,
-                   modules => [check_http]} || RealConfig <- RealConfs],
+                   modules => [check_real]} || RealConfig <- RealConfs],
     {ok, {SupFlags, ChildSpecs ++ RealSpecs}}.

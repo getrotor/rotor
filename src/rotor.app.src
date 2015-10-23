@@ -18,7 +18,7 @@
   {env,[]},
   {modules, [rotor_app, rotor_sup, config_file, udp_server_supervisor,
              rotation_supervisor, udp_server, resolver, check_rotation,
-             check_http]},
+             check_real]},
 
   {contributors, []},
   {licenses, []},
